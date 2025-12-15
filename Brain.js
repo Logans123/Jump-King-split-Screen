@@ -23,7 +23,7 @@ class AIAction {
 }
 
 class Brain {
-    constructor(bufferSize = 1000, obsSize = 8, actionSize = 18) {
+    constructor(bufferSize = 1000, obsSize = 12, actionSize = 18) {
         this.type = 'PPO';
         this.instructions = new Array(bufferSize);
         this.currentInstructionNumber = 0;
@@ -57,6 +57,10 @@ class Brain {
 
     // Convert Player to observation vector
     _getObservationFromPlayer(player) {
+        // Add a few extra normalized features to help learning:
+        // - player position (x,y) normalized
+        // - previous velocity (x,y) normalized
+        // Keep legacy features too so networks remain compatible-ish.
         return [
             player.isOnGround ? 1 : 0,
             player.currentSpeed.x / 20,
@@ -65,7 +69,12 @@ class Brain {
             player.currentLevelNo / 40,
             player.bestLevelReached / 40,
             player.facingRight ? 1 : 0,
-            player.blizzardForce / 1
+            player.blizzardForce / 1,
+            // new features
+            (player.currentPos.x || 0) / (width || 1),
+            (player.currentPos.y || 0) / (height || 1),
+            (player.previousSpeed ? player.previousSpeed.x : 0) / 20,
+            (player.previousSpeed ? player.previousSpeed.y : 0) / 20
         ];
     }
 
@@ -93,12 +102,14 @@ class Brain {
             const logp = Math.log(probs[action] + 1e-8);
             const value = this.valueModel.predict(obsT).arraySync()[0][0];
 
-            // store step and record current fitness as baseFitness for per-step rewards
-            // ensure player's fitness is up-to-date
+            // store step and record current fitness/height/coins for per-step rewards
             try { player.CalculateFitness(); } catch (e) {}
             const baseFitness = player.fitness || 0;
+            const baseHeight = (player.bestHeightReached !== undefined) ? player.bestHeightReached : 0;
+            const baseLevel = (player.bestLevelReached !== undefined) ? player.bestLevelReached : 0;
+            const baseCoins = (player.numberOfCoinsPickedUp !== undefined) ? player.numberOfCoinsPickedUp : 0;
             if (this.startFitness === undefined) this.startFitness = baseFitness;
-            this.buffer.push({ obs, action, logp, value, baseFitness });
+            this.buffer.push({ obs, action, logp, value, baseFitness, baseHeight, baseLevel, baseCoins });
             this.currentInstructionNumber += 1;
             return this._actionIndexToAIAction(action);
         });

@@ -170,15 +170,41 @@ class Population {
                 const buf = p.brain.buffer;
                 const n = buf.length;
                 // build arrays of baseFitness and values
-                const baseFits = buf.map(b => b.baseFitness || 0);
                 const values = buf.map(b => b.value || 0);
-                // compute per-step rewards as fitness deltas between consecutive steps
+                const baseHeights = buf.map(b => b.baseHeight || 0);
+                const baseLevels = buf.map(b => b.baseLevel || 0);
+                const baseCoins = buf.map(b => b.baseCoins || 0);
+
+                // Reward shaping constants (tunable)
+                const heightScale = 1.0; // reward per unit height
+                const coinReward = 500000; // keep parity with Player.CalculateFitness coin value
+                const levelBonus = 1000000; // big bonus for reaching a new level
+                const timePenalty = -0.01; // small per-step penalty to encourage efficiency
+
+                // compute per-step rewards using height deltas, coin pickups, and level gains
                 const rewards = new Array(n).fill(0);
                 for (let t = 0; t < n - 1; t++) {
-                    rewards[t] = (baseFits[t + 1] || 0) - (baseFits[t] || 0);
+                    const dh = (baseHeights[t + 1] || 0) - (baseHeights[t] || 0);
+                    const dcoins = (baseCoins[t + 1] || 0) - (baseCoins[t] || 0);
+                    const dlevel = (baseLevels[t + 1] || 0) - (baseLevels[t] || 0);
+                    let r = dh * heightScale;
+                    if (dcoins > 0) r += dcoins * coinReward;
+                    if (dlevel > 0) r += dlevel * levelBonus;
+                    r += timePenalty;
+                    rewards[t] = r;
                 }
-                // last step reward = final fitness - baseFitness of last step
-                rewards[n - 1] = finalReward - (baseFits[n - 1] || 0);
+                // last step: compare against final player state rather than squared fitness
+                const finalBaseHeight = p.bestHeightReached || 0;
+                const finalCoins = p.numberOfCoinsPickedUp || 0;
+                const finalLevel = p.bestLevelReached || 0;
+                const lastDh = finalBaseHeight - (baseHeights[n - 1] || 0);
+                const lastDcoins = finalCoins - (baseCoins[n - 1] || 0);
+                const lastDlevel = finalLevel - (baseLevels[n - 1] || 0);
+                let lastR = lastDh * heightScale;
+                if (lastDcoins > 0) lastR += lastDcoins * coinReward;
+                if (lastDlevel > 0) lastR += lastDlevel * levelBonus;
+                lastR += timePenalty;
+                rewards[n - 1] = lastR;
 
                 // compute deltas and advantages (GAE)
                 const deltas = new Array(n).fill(0);
@@ -231,7 +257,7 @@ class Population {
                 }
 
                 // Start async training; when it finishes copy updated weights into each player's models
-                trainerBrain.trainOnAggregatedBuffer(aggregated, { epochs: 3, batchSize: 32, clipRatio: 0.2, policyLr: 1e-4, valueLr: 1e-3, entropyCoef: 1e-3, gamma: 0.99, lambda: 0.95 }).then(() => {
+                trainerBrain.trainOnAggregatedBuffer(aggregated, { epochs: 5, batchSize: 64, clipRatio: 0.2, policyLr: 2e-4, valueLr: 1e-3, entropyCoef: 1e-3, gamma: 0.99, lambda: 0.95 }).then(() => {
                     for (let i = 0; i < this.players.length; i++) {
                         try {
                             if (typeof copyModelWeights === 'function' && trainerBrain.policyModel && this.players[i].brain && this.players[i].brain.policyModel) {
