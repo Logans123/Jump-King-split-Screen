@@ -29,7 +29,7 @@ let placingPlayer = false;
 let placingCoins = false;
 let playerPlaced = false;
 
-let testingSinglePlayer = false;
+let testingSinglePlayer = true;
 let enableCheckpointMode = true; // when true, new populations start from the best reached level
 // Auto-load last local save on startup? Keep disabled to avoid unexpectedly restoring saves.
 let autoLoadLocalSaves = false;
@@ -535,6 +535,18 @@ function keyReleased() {
             // Shift+3 -> load slot 3
             loadFromLocalSlot(3);
             break;
+        case '4':
+            // Save multiplayer progress
+            if (testingSinglePlayer && multiplayerMode) {
+                saveMultiplayerProgressManual();
+            }
+            break;
+        case '5':
+            // Load multiplayer progress
+            if (testingSinglePlayer && multiplayerMode) {
+                loadMultiplayerProgressManual();
+            }
+            break;
         case 'P':
             // Toggle checkpoint progression on/off
             enableCheckpointMode = !enableCheckpointMode;
@@ -553,6 +565,13 @@ function keyReleased() {
             if (!creatingLines) {
                 player.jumpHeld = false
                 player.Jump()
+            }
+            break;
+        case 'w':
+        case 'W':
+            if (multiplayerMode) {
+                player2.jumpHeld = false;
+                player2.Jump();
             }
             break;
         case 'a':
@@ -854,5 +873,79 @@ function loadMultiplayerProgress() {
         player2.currentLevelNo = data.player2.level;
         player2.bestLevelReached = data.player2.bestLevel || 0;
         console.log('Progress loaded!');
+    }
+}
+
+// Manual save for multiplayer (button 4)
+function saveMultiplayerProgressManual() {
+    let data = {
+        player1: {
+            x: player.currentPos.x,
+            y: player.currentPos.y,
+            level: player.currentLevelNo,
+            bestLevel: player.bestLevelReached
+        },
+        player2: {
+            x: player2.currentPos.x,
+            y: player2.currentPos.y,
+            level: player2.currentLevelNo,
+            bestLevel: player2.bestLevelReached
+        },
+        savedAt: new Date().toISOString()
+    };
+    
+    try {
+        localStorage.setItem('jumpKingMultiplayer', JSON.stringify(data));
+        
+        // Also create a downloadable backup file
+        const json = JSON.stringify(data, null, 2);
+        const blob = new Blob([json], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+        const filename = 'jumpking_multiplayer_' + timestamp + '.json';
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        
+        lastDownloadMessage = 'Multiplayer progress saved! P1 Level: ' + player.currentLevelNo + ' P2 Level: ' + player2.currentLevelNo;
+        lastDownloadMessageTime = millis();
+        console.log('Multiplayer progress saved: ' + filename);
+    } catch (e) {
+        console.error('Failed to save multiplayer progress', e);
+        lastDownloadMessage = 'Failed to save multiplayer progress';
+        lastDownloadMessageTime = millis();
+    }
+}
+
+// Manual load for multiplayer (button 5)
+function loadMultiplayerProgressManual() {
+    try {
+        let saved = localStorage.getItem('jumpKingMultiplayer');
+        if (!saved) {
+            lastDownloadMessage = 'No multiplayer save found';
+            lastDownloadMessageTime = millis();
+            return;
+        }
+        
+        let data = JSON.parse(saved);
+        player.currentPos = createVector(data.player1.x, data.player1.y);
+        player.currentLevelNo = data.player1.level;
+        player.bestLevelReached = data.player1.bestLevel || 0;
+        
+        player2.currentPos = createVector(data.player2.x, data.player2.y);
+        player2.currentLevelNo = data.player2.level;
+        player2.bestLevelReached = data.player2.bestLevel || 0;
+        
+        lastDownloadMessage = 'Multiplayer progress loaded! P1 Level: ' + player.currentLevelNo + ' P2 Level: ' + player2.currentLevelNo;
+        lastDownloadMessageTime = millis();
+        console.log('Multiplayer progress loaded!');
+    } catch (e) {
+        console.error('Failed to load multiplayer progress', e);
+        lastDownloadMessage = 'Failed to load multiplayer progress';
+        lastDownloadMessageTime = millis();
     }
 }
