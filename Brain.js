@@ -23,7 +23,7 @@ class AIAction {
 }
 
 class Brain {
-    constructor(bufferSize = 1000, obsSize = 14, actionSize = 18) {
+    constructor(bufferSize = 1000, obsSize = 16, actionSize = 18) {
         this.type = 'PPO';
         this.instructions = new Array(bufferSize);
         this.currentInstructionNumber = 0;
@@ -61,6 +61,7 @@ class Brain {
         // - player position (x,y) normalized
         // - previous velocity (x,y) normalized
         // - nearest platform vertical distances (above / below) normalized
+        // - nearest platform horizontal offset (to guide aiming)
         // Keep legacy features too so networks remain compatible-ish.
         const plat = this._getNearestPlatformDistances(player);
         return [
@@ -78,43 +79,59 @@ class Brain {
             (player.previousSpeed ? player.previousSpeed.x : 0) / 20,
             (player.previousSpeed ? player.previousSpeed.y : 0) / 20,
             plat.aboveDist,
-            plat.belowDist
+            plat.belowDist,
+            plat.horizontalOffset,
+            plat.platformCenterX
         ];
     }
 
-    // return normalized vertical distances to nearest horizontal platform above/below the player
+    // return vertical distances and horizontal offset to nearest horizontal platform above/below
     _getNearestPlatformDistances(player) {
         try {
             const lvl = levels[player.currentLevelNo];
-            if (!lvl || !lvl.lines) return { aboveDist: 1, belowDist: 1 };
+            if (!lvl || !lvl.lines) return { aboveDist: 1, belowDist: 1, horizontalOffset: 0, platformCenterX: 0.5 };
             let above = Infinity;
             let below = Infinity;
+            let aboveCenterX = 0;
+            let belowCenterX = 0;
             const px = player.currentPos.x || 0;
             const py = player.currentPos.y || 0;
             // consider only horizontal lines as platforms
             for (let l of lvl.lines) {
                 if (!l.isHorizontal) continue;
-                // check horizontal overlap tolerance
-                const pad = 40; // allow platforms slightly off-center
-                const x1 = Math.min(l.x1, l.x2) - pad;
-                const x2 = Math.max(l.x1, l.x2) + pad;
-                if (px >= x1 && px <= x2) {
-                    const ly = l.y1; // horizontal line y
-                    const dy = ly - py;
-                    if (dy < 0) {
-                        // platform above (smaller y is higher on screen)
-                        above = Math.min(above, Math.abs(dy));
-                    } else if (dy > 0) {
-                        // platform below
-                        below = Math.min(below, Math.abs(dy));
-                    }
+                const centerX = (l.x1 + l.x2) / 2;
+                const dy = l.y1 - py;
+                if (dy < 0 && Math.abs(dy) < above) {
+                    // platform above (smaller y is higher on screen)
+                    above = Math.abs(dy);
+                    aboveCenterX = centerX;
+                } else if (dy > 0 && Math.abs(dy) < below) {
+                    // platform below
+                    below = Math.abs(dy);
+                    belowCenterX = centerX;
                 }
             }
+            // compute horizontal offset from player to nearest above platform center
+            let horizontalOffset = 0;
+            let platformCenterX = 0.5;
+            if (above !== Infinity) {
+                horizontalOffset = (aboveCenterX - px) / (width || 1);
+                platformCenterX = aboveCenterX / (width || 1);
+            } else if (below !== Infinity) {
+                horizontalOffset = (belowCenterX - px) / (width || 1);
+                platformCenterX = belowCenterX / (width || 1);
+            }
             const maxDist = Math.max(width, height);
-            return { aboveDist: (above === Infinity) ? 1 : Math.min(1, above / maxDist), belowDist: (below === Infinity) ? 1 : Math.min(1, below / maxDist) };
+            return { 
+                aboveDist: (above === Infinity) ? 1 : Math.min(1, above / maxDist), 
+                belowDist: (below === Infinity) ? 1 : Math.min(1, below / maxDist),
+                horizontalOffset: Math.max(-1, Math.min(1, horizontalOffset)),
+                platformCenterX: Math.max(0, Math.min(1, platformCenterX))
+            };
         } catch (e) {
-            return { aboveDist: 1, belowDist: 1 };
+            return { aboveDist: 1, belowDist: 1, horizontalOffset: 0, platformCenterX: 0.5 };
         }
+    }
     }
 
     // sample action and record step info
