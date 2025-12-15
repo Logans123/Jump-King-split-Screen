@@ -288,6 +288,21 @@ class Population {
                     }
                 } catch (e) {}
             }
+            // Log per-generation diagnostics to help find where agents struggle
+            try {
+                const nPlayers = this.players.length;
+                const avgBestHeight = this.players.reduce((s,p)=>s + (p.bestHeightReached||0),0)/nPlayers;
+                const reachedLevel1 = this.players.filter(p=> (p.bestLevelReached||0) >= 1).length;
+                // histogram of bestPosX across 6 bins
+                const bins = [0,0,0,0,0,0];
+                for (let p of this.players) {
+                    const x = (p.bestPosX !== undefined && p.bestPosX !== null) ? p.bestPosX : (p.currentPos ? p.currentPos.x : 0);
+                    const bin = Math.floor(Math.min(Math.max(x,0), width-1) / (width / bins.length));
+                    bins[Math.min(Math.max(bin,0), bins.length-1)]++;
+                }
+                console.log('Gen', this.gen, 'avgBestHeight', Math.round(avgBestHeight), 'reachedLevel1', reachedLevel1, 'histBins', bins);
+            } catch (e) { console.warn('Diag logging failed', e); }
+
             this.gen++;
             this.newLevelReached = false;
             return;

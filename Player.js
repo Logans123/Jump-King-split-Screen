@@ -30,6 +30,7 @@ class PlayerState {
 
 
         this.bestHeightReached = 0;
+        this.bestPosX = this.currentPos.x;
         this.bestLevelReached = 0;
         this.reachedHeightAtStepNo = 0;
         this.bestLevelReachedOnActionNo = 0;
@@ -302,6 +303,8 @@ class Player {
         this.playersDead = false;
         this.previousSpeed = createVector(0, 0)
         this.bestHeightReached = 0;
+        this.bestPosX = this.currentPos.x;
+        this.bestPosX = this.currentPos.x;
         this.reachedHeightAtStepNo = 0;
 
         this.fitness = 0;
@@ -1332,6 +1335,7 @@ class Player {
 
         if (this.GetGlobalHeight() > this.bestHeightReached) {
             this.bestHeightReached = this.GetGlobalHeight();
+            this.bestPosX = this.currentPos.x;
             this.reachedHeightAtStepNo = this.brain.currentInstructionNumber;
 
 
