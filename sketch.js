@@ -457,16 +457,40 @@ function keyReleased() {
             mutePlayers = false;
             break;
         case '1':
-            // Save to local slot 1 and download backup
-            saveToLocalSlot(1);
+            // Download the best AI brain (PPO) as a JSON file
+            try {
+                let brainToSave = null;
+                if (population && population.players && population.players.length > 0 && population.players[population.bestPlayerIndex]) {
+                    brainToSave = population.players[population.bestPlayerIndex].brain;
+                } else if (population && population.cloneOfBestPlayerFromPreviousGeneration) {
+                    brainToSave = population.cloneOfBestPlayerFromPreviousGeneration.brain;
+                }
+                if (brainToSave) {
+                    Brain.saveBestBrainToFile(brainToSave, population ? population.gen : 0);
+                } else {
+                    alert('No brain available to download');
+                }
+            } catch (e) {
+                console.error('Failed to download brain', e);
+                alert('Failed to download brain');
+            }
             break;
         case '2':
-            // Save to local slot 2 and download backup
-            saveToLocalSlot(2);
+            // Open the hidden file picker to import a brain/checkpoint/snapshot
+            if (filePickerInput) {
+                filePickerInput.value = null;
+                filePickerInput.click();
+            } else {
+                alert('File picker not available');
+            }
             break;
         case '3':
-            // Save snapshot (checkpoint + brain) to slot 3
-            saveToLocalSlot(3);
+            // Download full snapshot (checkpoint + brain + generation)
+            if (population && typeof population.saveSnapshotToFile === 'function') {
+                population.saveSnapshotToFile();
+            } else {
+                alert('No snapshot available to download');
+            }
             break;
         case '!':
             // Shift+1 -> load slot 1
