@@ -243,10 +243,19 @@ function draw() {
         // Removed 'NEW CHECKPOINT REACHED' HUD overlay to avoid overlapping FPS
     }
 
+    // Display download notification
+    if (lastDownloadMessage && millis() - lastDownloadMessageTime < 3000) {
+        fill(255, 255, 255);
+        textSize(18);
+        textAlign(LEFT);
+        text(lastDownloadMessage, 30, 50 + 30);
+    }
 
 }
 
 let previousFrameRate = 60;
+let lastDownloadMessage = '';
+let lastDownloadMessageTime = 0;
 
 function showLevel(levelNumberToShow) {
     // print(levelNumberToShow)
@@ -467,12 +476,16 @@ function keyReleased() {
                 }
                 if (brainToSave) {
                     Brain.saveBestBrainToFile(brainToSave, population ? population.gen : 0);
+                    lastDownloadMessage = 'Brain downloaded! Gen: ' + (population ? population.gen : 0);
+                    lastDownloadMessageTime = millis();
                 } else {
-                    alert('No brain available to download');
+                    lastDownloadMessage = 'No brain available to download';
+                    lastDownloadMessageTime = millis();
                 }
             } catch (e) {
                 console.error('Failed to download brain', e);
-                alert('Failed to download brain');
+                lastDownloadMessage = 'Failed to download brain';
+                lastDownloadMessageTime = millis();
             }
             break;
         case '2':
@@ -486,10 +499,19 @@ function keyReleased() {
             break;
         case '3':
             // Download full snapshot (checkpoint + brain + generation)
-            if (population && typeof population.saveSnapshotToFile === 'function') {
-                population.saveSnapshotToFile();
-            } else {
-                alert('No snapshot available to download');
+            try {
+                if (population && typeof population.saveSnapshotToFile === 'function') {
+                    population.saveSnapshotToFile();
+                    lastDownloadMessage = 'Snapshot downloaded! Level: ' + (population.currentBestLevelReached || 0) + ' Gen: ' + (population.gen || 0);
+                    lastDownloadMessageTime = millis();
+                } else {
+                    lastDownloadMessage = 'No snapshot available to download';
+                    lastDownloadMessageTime = millis();
+                }
+            } catch (e) {
+                console.error('Failed to download snapshot', e);
+                lastDownloadMessage = 'Failed to download snapshot';
+                lastDownloadMessageTime = millis();
             }
             break;
         case '!':
