@@ -181,26 +181,28 @@ class Population {
                 const levelBonus = 1000000; // big bonus for reaching a new level
                 const timePenalty = -0.01; // small per-step penalty to encourage efficiency
 
-                // compute per-step rewards using height deltas, coin pickups, and level gains
+                // compute per-step rewards using delta of squared "heightThisLevel" to match Player.CalculateFitness
+                // heightThisLevel = bestHeightReached - (height * bestLevelReached)
                 const rewards = new Array(n).fill(0);
                 for (let t = 0; t < n - 1; t++) {
-                    const dh = (baseHeights[t + 1] || 0) - (baseHeights[t] || 0);
+                    const h0 = (baseHeights[t] || 0) - (baseLevels[t] || 0) * height;
+                    const h1 = (baseHeights[t + 1] || 0) - (baseLevels[t + 1] || 0) * height;
+                    const fitnessDeltaFromHeight = (h1 * h1) - (h0 * h0);
                     const dcoins = (baseCoins[t + 1] || 0) - (baseCoins[t] || 0);
                     const dlevel = (baseLevels[t + 1] || 0) - (baseLevels[t] || 0);
-                    let r = dh * heightScale;
+                    let r = fitnessDeltaFromHeight;
                     if (dcoins > 0) r += dcoins * coinReward;
                     if (dlevel > 0) r += dlevel * levelBonus;
                     r += timePenalty;
                     rewards[t] = r;
                 }
-                // last step: compare against final player state rather than squared fitness
-                const finalBaseHeight = p.bestHeightReached || 0;
-                const finalCoins = p.numberOfCoinsPickedUp || 0;
-                const finalLevel = p.bestLevelReached || 0;
-                const lastDh = finalBaseHeight - (baseHeights[n - 1] || 0);
-                const lastDcoins = finalCoins - (baseCoins[n - 1] || 0);
-                const lastDlevel = finalLevel - (baseLevels[n - 1] || 0);
-                let lastR = lastDh * heightScale;
+                // last step: compare against final player state
+                const hLast = (baseHeights[n - 1] || 0) - (baseLevels[n - 1] || 0) * height;
+                const hFinal = (p.bestHeightReached || 0) - (p.bestLevelReached || 0) * height;
+                const lastFitnessDeltaFromHeight = (hFinal * hFinal) - (hLast * hLast);
+                const lastDcoins = (p.numberOfCoinsPickedUp || 0) - (baseCoins[n - 1] || 0);
+                const lastDlevel = (p.bestLevelReached || 0) - (baseLevels[n - 1] || 0);
+                let lastR = lastFitnessDeltaFromHeight;
                 if (lastDcoins > 0) lastR += lastDcoins * coinReward;
                 if (lastDlevel > 0) lastR += lastDlevel * levelBonus;
                 lastR += timePenalty;
