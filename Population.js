@@ -26,7 +26,7 @@ class Population {
         this.cloneOfBestPlayerFromPreviousGeneration = this.players[0].clone();
         this.checkpointState = null; // PlayerState snapshot for the current best level checkpoint
         // No local persistence for checkpoints; file-based only
-        this.requiredSuccessfulPlayersForLevel = 5; // require this many players to reach a level before it's unlocked
+        this.requiredSuccessfulPlayersForLevel = 2; // require this many players to reach a level before it's unlocked (lowered from 5 to speed checkpoint discovery)
         this.latestCandidateSuccessCount = 0; // last generation's candidate success count
     }
 
@@ -259,7 +259,7 @@ class Population {
                 }
 
                 // Start async training; when it finishes copy updated weights into each player's models
-                trainerBrain.trainOnAggregatedBuffer(aggregated, { epochs: 5, batchSize: 64, clipRatio: 0.2, policyLr: 2e-4, valueLr: 1e-3, entropyCoef: 1e-3, gamma: 0.99, lambda: 0.95 }).then(() => {
+                trainerBrain.trainOnAggregatedBuffer(aggregated, { epochs: 5, batchSize: 64, clipRatio: 0.2, policyLr: 2e-4, valueLr: 1e-3, entropyCoef: 5e-3, gamma: 0.99, lambda: 0.95 }).then(() => {
                     for (let i = 0; i < this.players.length; i++) {
                         try {
                             if (typeof copyModelWeights === 'function' && trainerBrain.policyModel && this.players[i].brain && this.players[i].brain.policyModel) {

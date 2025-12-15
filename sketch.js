@@ -29,7 +29,7 @@ let placingPlayer = false;
 let placingCoins = false;
 let playerPlaced = false;
 
-let testingSinglePlayer = true;
+let testingSinglePlayer = false;
 let enableCheckpointMode = true; // when true, new populations start from the best reached level
 // Auto-load last local save on startup? Keep disabled to avoid unexpectedly restoring saves.
 let autoLoadLocalSaves = false;
@@ -98,7 +98,7 @@ function setup() {
     player = new Player();
     player2 = new Player();
     player2.currentPos = createVector(width / 2 + 100, height - 200);
-    population = new Population(100);
+    population = new Population(140);
     setupLevels();
     jumpSound.playMode('sustain');
     fallSound.playMode('sustain');
