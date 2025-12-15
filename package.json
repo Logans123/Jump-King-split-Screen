@@ -1,14 +1,19 @@
 {
-  "name": "workspace",
+  "name": "jump-king-split-screen",
   "version": "1.0.0",
   "main": "Brain.js",
   "scripts": {
+    "start": "serve -s . -l 5000",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
   "author": "",
-  "license": "ISC",
-  "description": "",
+  "license": "MIT",
+  "description": "A split-screen Jump King clone using p5.js and neuroevolution.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/LoganBlade/Jump-King-split-Screen.git"
+  },
   "dependencies": {
     "serve": "^14.2.5"
   }
