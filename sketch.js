@@ -679,10 +679,12 @@ function saveToLocalSlot(slotNumber) {
         a.click();
         a.remove();
         setTimeout(() => URL.revokeObjectURL(url), 1000);
-        alert('Saved to slot ' + slotNumber + ' (Generation: ' + population.gen + ')');
+        lastDownloadMessage = 'Saved to slot ' + slotNumber + ' (Generation: ' + population.gen + ')';
+        lastDownloadMessageTime = millis();
     } catch (e) {
         console.error('Failed to save to local slot', e);
-        alert('Failed to save to slot ' + slotNumber);
+        lastDownloadMessage = 'Failed to save to slot ' + slotNumber;
+        lastDownloadMessageTime = millis();
     }
 }
 
@@ -690,17 +692,24 @@ function saveToLocalSlot(slotNumber) {
 async function loadFromLocalSlot(slotNumber) {
     try {
         const str = localStorage.getItem('jumpking_slot' + slotNumber);
-        if (!str) { alert('No save in slot ' + slotNumber); return; }
+        if (!str) { 
+            lastDownloadMessage = 'No save in slot ' + slotNumber;
+            lastDownloadMessageTime = millis();
+            return; 
+        }
         const data = JSON.parse(str);
         const applied = population.applySnapshotData(data);
         if (applied) {
-            alert('Loaded slot ' + slotNumber + ' Level: ' + applied.level + ' Gen: ' + applied.generation);
+            lastDownloadMessage = 'Loaded slot ' + slotNumber + ' Level: ' + applied.level + ' Gen: ' + applied.generation;
+            lastDownloadMessageTime = millis();
         } else {
-            alert('Failed to apply slot ' + slotNumber);
+            lastDownloadMessage = 'Failed to apply slot ' + slotNumber;
+            lastDownloadMessageTime = millis();
         }
     } catch (e) {
         console.error('Failed to load slot', e);
-        alert('Failed to load slot ' + slotNumber);
+        lastDownloadMessage = 'Failed to load slot ' + slotNumber;
+        lastDownloadMessageTime = millis();
     }
 }
 
