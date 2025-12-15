@@ -235,16 +235,6 @@ function draw() {
         text('Gen: ' + population.gen, 30, 35);
         text('Moves: ' + population.players[0].brain.instructions.length, 200, 35);
         text('Best: ' + population.bestHeight, 400, 35);
-        
-        // Display training diagnostics on-screen
-        try {
-            const nPlayers = population.players.length;
-            const avgBestHeight = population.players.reduce((s,p)=>s + (p.bestHeightReached||0),0)/nPlayers;
-            const reachedLevel1 = population.players.filter(p=> (p.bestLevelReached||0) >= 1).length;
-            textSize(14);
-            text('AvgHeight: ' + Math.round(avgBestHeight), 30, 50);
-            text('Level1: ' + reachedLevel1 + '/' + nPlayers, 250, 50);
-        } catch (e) { }
     }
 
     // Display download notification
