@@ -498,21 +498,8 @@ function keyReleased() {
             }
             break;
         case '3':
-            // Download full snapshot (checkpoint + brain + generation)
-            try {
-                if (population && typeof population.saveSnapshotToFile === 'function') {
-                    population.saveSnapshotToFile();
-                    lastDownloadMessage = 'Snapshot downloaded! Level: ' + (population.currentBestLevelReached || 0) + ' Gen: ' + (population.gen || 0);
-                    lastDownloadMessageTime = millis();
-                } else {
-                    lastDownloadMessage = 'No snapshot available to download';
-                    lastDownloadMessageTime = millis();
-                }
-            } catch (e) {
-                console.error('Failed to download snapshot', e);
-                lastDownloadMessage = 'Failed to download snapshot';
-                lastDownloadMessageTime = millis();
-            }
+            // Save snapshot to slot 3 (saves to localStorage and downloads backup)
+            saveToLocalSlot(3);
             break;
         case '!':
             // Shift+1 -> load slot 1
