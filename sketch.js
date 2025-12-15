@@ -330,15 +330,22 @@ function setupFileDrop() {
         }
         // Try loading as Brain first, then fallback to checkpoint
         let loadedBrain = await Brain.loadBestBrainFromFile(file);
-        if (loadedBrain) {
-            for (let i = 0; i < population.players.length; i++) {
-                population.players[i].brain = loadedBrain.brain.clone();
-                population.players[i].brain.mutate();
+        if (loadedBrain && loadedBrain.brain) {
+            try {
+                for (let i = 0; i < population.players.length; i++) {
+                    population.players[i].brain = loadedBrain.brain.clone();
+                    // Don't mutate on first load - just use as-is
+                }
+                population.gen = loadedBrain.generation || population.gen;
+                lastDownloadMessage = 'Brain loaded! Gen: ' + loadedBrain.generation;
+                lastDownloadMessageTime = millis();
+                return;
+            } catch (e) {
+                console.error('Error applying loaded brain:', e);
+                lastDownloadMessage = 'Error loading brain file';
+                lastDownloadMessageTime = millis();
+                return;
             }
-            population.gen = loadedBrain.generation || population.gen;
-            lastDownloadMessage = 'Brain loaded! Gen: ' + loadedBrain.generation;
-            lastDownloadMessageTime = millis();
-            return;
         }
         // Try checkpoint
         let loadedCheckpoint = await population.loadCheckpointFromFile(file);
@@ -388,15 +395,22 @@ function setupFileDrop() {
             // fallback to older handlers below
         }
         let loadedBrain = await Brain.loadBestBrainFromFile(file);
-        if (loadedBrain) {
-            for (let i = 0; i < population.players.length; i++) {
-                population.players[i].brain = loadedBrain.brain.clone();
-                population.players[i].brain.mutate();
+        if (loadedBrain && loadedBrain.brain) {
+            try {
+                for (let i = 0; i < population.players.length; i++) {
+                    population.players[i].brain = loadedBrain.brain.clone();
+                    // Don't mutate on first load - just use as-is
+                }
+                population.gen = loadedBrain.generation || population.gen;
+                lastDownloadMessage = 'Brain loaded! Gen: ' + loadedBrain.generation;
+                lastDownloadMessageTime = millis();
+                return;
+            } catch (e) {
+                console.error('Error applying loaded brain:', e);
+                lastDownloadMessage = 'Error loading brain file';
+                lastDownloadMessageTime = millis();
+                return;
             }
-            population.gen = loadedBrain.generation || population.gen;
-            lastDownloadMessage = 'Brain loaded! Gen: ' + loadedBrain.generation;
-            lastDownloadMessageTime = millis();
-            return;
         }
         let loadedCheckpoint = await population.loadCheckpointFromFile(file);
         if (loadedCheckpoint) {
@@ -679,7 +693,12 @@ function saveToLocalSlot(slotNumber) {
         const json = JSON.stringify(obj, null, 2);
         const blob = new Blob([json], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
-        const filename = 'jumpking_slot' + slotNumber + '_gen_' + population.gen + '.json';
+        let filename;
+        if (slotNumber === 3) {
+            filename = 'jumpking_snapshot_gen_' + population.gen + '_level_' + (population.currentBestLevelReached || 0) + '.json';
+        } else {
+            filename = 'jumpking_slot' + slotNumber + '_gen_' + population.gen + '.json';
+        }
         const a = document.createElement('a');
         a.href = url;
         a.download = filename;
