@@ -300,7 +300,27 @@ class Population {
                     const bin = Math.floor(Math.min(Math.max(x,0), width-1) / (width / bins.length));
                     bins[Math.min(Math.max(bin,0), bins.length-1)]++;
                 }
-                console.log('Gen', this.gen, 'avgBestHeight', Math.round(avgBestHeight), 'reachedLevel1', reachedLevel1, 'histBins', bins);
+                const diag = { gen: this.gen, avgBestHeight: Math.round(avgBestHeight), reachedLevel1, histBins: bins, timestamp: new Date().toISOString() };
+                console.log('Gen', diag.gen, 'avgBestHeight', diag.avgBestHeight, 'reachedLevel1', diag.reachedLevel1, 'histBins', diag.histBins);
+                try {
+                    const key = 'jumpking_training_log';
+                    let arr = [];
+                    try { arr = JSON.parse(localStorage.getItem(key) || '[]'); } catch (e) { arr = []; }
+                    arr.push(diag);
+                    try { localStorage.setItem(key, JSON.stringify(arr)); } catch (e) { /* ignore storage errors */ }
+                    if (this.gen % 10 === 0) {
+                        const json = JSON.stringify(arr, null, 2);
+                        const blob = new Blob([json], { type: 'application/json' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = 'jumpking_training_log_gen_' + this.gen + '.json';
+                        document.body.appendChild(a);
+                        a.click();
+                        a.remove();
+                        setTimeout(() => URL.revokeObjectURL(url), 1000);
+                    }
+                } catch (e) { console.warn('Failed to persist diag', e); }
             } catch (e) { console.warn('Diag logging failed', e); }
 
             this.gen++;
