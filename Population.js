@@ -179,7 +179,7 @@ class Population {
                 const heightScale = 1.0; // reward per unit height
                 const coinReward = 500000; // keep parity with Player.CalculateFitness coin value
                 const levelBonus = 1000000; // big bonus for reaching a new level
-                const timePenalty = -0.001; // very small per-step penalty to allow exploration (lowered from -0.01)
+                const timePenalty = -0.0001; // minimal per-step penalty to encourage long exploration (lowered from -0.001)
 
                 // compute per-step rewards using delta of squared "heightThisLevel" to match Player.CalculateFitness
                 // heightThisLevel = bestHeightReached - (height * bestLevelReached)
@@ -259,7 +259,7 @@ class Population {
                 }
 
                 // Start async training; when it finishes copy updated weights into each player's models
-                trainerBrain.trainOnAggregatedBuffer(aggregated, { epochs: 5, batchSize: 64, clipRatio: 0.2, policyLr: 2e-4, valueLr: 1e-3, entropyCoef: 5e-3, gamma: 0.99, lambda: 0.95 }).then(() => {
+                trainerBrain.trainOnAggregatedBuffer(aggregated, { epochs: 5, batchSize: 64, clipRatio: 0.2, policyLr: 2e-4, valueLr: 1e-3, entropyCoef: 1e-2, gamma: 0.99, lambda: 0.95 }).then(() => {
                     for (let i = 0; i < this.players.length; i++) {
                         try {
                             if (typeof copyModelWeights === 'function' && trainerBrain.policyModel && this.players[i].brain && this.players[i].brain.policyModel) {
