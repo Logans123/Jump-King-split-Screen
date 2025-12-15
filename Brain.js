@@ -23,7 +23,7 @@ class AIAction {
 }
 
 class Brain {
-    constructor(bufferSize = 1000, obsSize = 12, actionSize = 18) {
+    constructor(bufferSize = 1000, obsSize = 14, actionSize = 18) {
         this.type = 'PPO';
         this.instructions = new Array(bufferSize);
         this.currentInstructionNumber = 0;
@@ -57,10 +57,12 @@ class Brain {
 
     // Convert Player to observation vector
     _getObservationFromPlayer(player) {
-        // Add a few extra normalized features to help learning:
+        // Add features to help learning:
         // - player position (x,y) normalized
         // - previous velocity (x,y) normalized
+        // - nearest platform vertical distances (above / below) normalized
         // Keep legacy features too so networks remain compatible-ish.
+        const plat = this._getNearestPlatformDistances(player);
         return [
             player.isOnGround ? 1 : 0,
             player.currentSpeed.x / 20,
@@ -74,8 +76,45 @@ class Brain {
             (player.currentPos.x || 0) / (width || 1),
             (player.currentPos.y || 0) / (height || 1),
             (player.previousSpeed ? player.previousSpeed.x : 0) / 20,
-            (player.previousSpeed ? player.previousSpeed.y : 0) / 20
+            (player.previousSpeed ? player.previousSpeed.y : 0) / 20,
+            plat.aboveDist,
+            plat.belowDist
         ];
+    }
+
+    // return normalized vertical distances to nearest horizontal platform above/below the player
+    _getNearestPlatformDistances(player) {
+        try {
+            const lvl = levels[player.currentLevelNo];
+            if (!lvl || !lvl.lines) return { aboveDist: 1, belowDist: 1 };
+            let above = Infinity;
+            let below = Infinity;
+            const px = player.currentPos.x || 0;
+            const py = player.currentPos.y || 0;
+            // consider only horizontal lines as platforms
+            for (let l of lvl.lines) {
+                if (!l.isHorizontal) continue;
+                // check horizontal overlap tolerance
+                const pad = 40; // allow platforms slightly off-center
+                const x1 = Math.min(l.x1, l.x2) - pad;
+                const x2 = Math.max(l.x1, l.x2) + pad;
+                if (px >= x1 && px <= x2) {
+                    const ly = l.y1; // horizontal line y
+                    const dy = ly - py;
+                    if (dy < 0) {
+                        // platform above (smaller y is higher on screen)
+                        above = Math.min(above, Math.abs(dy));
+                    } else if (dy > 0) {
+                        // platform below
+                        below = Math.min(below, Math.abs(dy));
+                    }
+                }
+            }
+            const maxDist = Math.max(width, height);
+            return { aboveDist: (above === Infinity) ? 1 : Math.min(1, above / maxDist), belowDist: (below === Infinity) ? 1 : Math.min(1, below / maxDist) };
+        } catch (e) {
+            return { aboveDist: 1, belowDist: 1 };
+        }
     }
 
     // sample action and record step info
