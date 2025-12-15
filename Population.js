@@ -26,7 +26,7 @@ class Population {
         this.cloneOfBestPlayerFromPreviousGeneration = this.players[0].clone();
         this.checkpointState = null; // PlayerState snapshot for the current best level checkpoint
         // No local persistence for checkpoints; file-based only
-        this.requiredSuccessfulPlayersForLevel = 2; // require this many players to reach a level before it's unlocked (lowered from 5 to speed checkpoint discovery)
+        this.requiredSuccessfulPlayersForLevel = 5; // require this many players to reach a level before it's unlocked
         this.latestCandidateSuccessCount = 0; // last generation's candidate success count
     }
 
@@ -179,7 +179,7 @@ class Population {
                 const heightScale = 1.0; // reward per unit height
                 const coinReward = 500000; // keep parity with Player.CalculateFitness coin value
                 const levelBonus = 1000000; // big bonus for reaching a new level
-                const timePenalty = -0.01; // small per-step penalty to encourage efficiency
+                const timePenalty = -0.001; // very small per-step penalty to allow exploration (lowered from -0.01)
 
                 // compute per-step rewards using delta of squared "heightThisLevel" to match Player.CalculateFitness
                 // heightThisLevel = bestHeightReached - (height * bestLevelReached)

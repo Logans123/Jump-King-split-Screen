@@ -98,7 +98,7 @@ function setup() {
     player = new Player();
     player2 = new Player();
     player2.currentPos = createVector(width / 2 + 100, height - 200);
-    population = new Population(140);
+    population = new Population(100);
     setupLevels();
     jumpSound.playMode('sustain');
     fallSound.playMode('sustain');
