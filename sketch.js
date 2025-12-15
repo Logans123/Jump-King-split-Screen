@@ -308,7 +308,7 @@ function setupFileDrop() {
         if (!files || files.length === 0) return;
         const file = files[0];
         try {
-            // Read file once to detect snapshot file type
+            // Read file once to detect file type
             const text = await file.text();
             let parsed = null;
             try {
@@ -316,6 +316,29 @@ function setupFileDrop() {
             } catch (err) {
                 parsed = null;
             }
+            
+            // Check for multiplayer save first
+            if (parsed && parsed.player1 && parsed.player2) {
+                try {
+                    player.currentPos = createVector(parsed.player1.x, parsed.player1.y);
+                    player.currentLevelNo = parsed.player1.level;
+                    player.bestLevelReached = parsed.player1.bestLevel || 0;
+                    
+                    player2.currentPos = createVector(parsed.player2.x, parsed.player2.y);
+                    player2.currentLevelNo = parsed.player2.level;
+                    player2.bestLevelReached = parsed.player2.bestLevel || 0;
+                    
+                    lastDownloadMessage = 'Multiplayer progress loaded! P1 Level: ' + player.currentLevelNo + ' P2 Level: ' + player2.currentLevelNo;
+                    lastDownloadMessageTime = millis();
+                    return;
+                } catch (e) {
+                    console.error('Error loading multiplayer file:', e);
+                    lastDownloadMessage = 'Error loading multiplayer file';
+                    lastDownloadMessageTime = millis();
+                    return;
+                }
+            }
+            
             // If snapshot, apply both brain and checkpoint from the snapshot (don't mutate)
             if (parsed && parsed.type === 'snapshot') {
                 const loadedSnapshot = population.applySnapshotData(parsed);
@@ -383,6 +406,29 @@ function setupFileDrop() {
             } catch (err) {
                 parsed = null;
             }
+            
+            // Check for multiplayer save first
+            if (parsed && parsed.player1 && parsed.player2) {
+                try {
+                    player.currentPos = createVector(parsed.player1.x, parsed.player1.y);
+                    player.currentLevelNo = parsed.player1.level;
+                    player.bestLevelReached = parsed.player1.bestLevel || 0;
+                    
+                    player2.currentPos = createVector(parsed.player2.x, parsed.player2.y);
+                    player2.currentLevelNo = parsed.player2.level;
+                    player2.bestLevelReached = parsed.player2.bestLevel || 0;
+                    
+                    lastDownloadMessage = 'Multiplayer progress loaded! P1 Level: ' + player.currentLevelNo + ' P2 Level: ' + player2.currentLevelNo;
+                    lastDownloadMessageTime = millis();
+                    return;
+                } catch (e) {
+                    console.error('Error loading multiplayer file:', e);
+                    lastDownloadMessage = 'Error loading multiplayer file';
+                    lastDownloadMessageTime = millis();
+                    return;
+                }
+            }
+            
             if (parsed && parsed.type === 'snapshot') {
                 const loadedSnapshot = population.applySnapshotData(parsed);
                 if (loadedSnapshot) {
@@ -520,8 +566,14 @@ function keyReleased() {
             }
             break;
         case '3':
-            // Save snapshot to slot 3 (saves to localStorage and downloads backup)
-            saveToLocalSlot(3);
+            // Save snapshot/multiplayer depending on mode
+            if (testingSinglePlayer && multiplayerMode) {
+                // In multiplayer mode - save multiplayer progress
+                saveMultiplayerProgressManual();
+            } else {
+                // In AI mode - save AI snapshot to slot 3
+                saveToLocalSlot(3);
+            }
             break;
         case '!':
             // Shift+1 -> load slot 1
