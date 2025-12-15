@@ -320,7 +320,8 @@ function setupFileDrop() {
             if (parsed && parsed.type === 'snapshot') {
                 const loadedSnapshot = population.applySnapshotData(parsed);
                 if (loadedSnapshot) {
-                    alert('Snapshot file loaded! Level: ' + loadedSnapshot.level + ' Generation: ' + loadedSnapshot.generation);
+                    lastDownloadMessage = 'Snapshot loaded! Level: ' + loadedSnapshot.level + ' Gen: ' + loadedSnapshot.generation;
+                    lastDownloadMessageTime = millis();
                     return;
                 }
             }
@@ -335,7 +336,8 @@ function setupFileDrop() {
                 population.players[i].brain.mutate();
             }
             population.gen = loadedBrain.generation || population.gen;
-            alert('Brain file loaded! Generation: ' + loadedBrain.generation);
+            lastDownloadMessage = 'Brain loaded! Gen: ' + loadedBrain.generation;
+            lastDownloadMessageTime = millis();
             return;
         }
         // Try checkpoint
@@ -348,10 +350,12 @@ function setupFileDrop() {
                     population.players[i].brain.currentInstructionNumber = population.checkpointState.brainActionNumber;
                 }
             }
-            alert('Checkpoint file loaded! Level: ' + loadedCheckpoint.level + ' Generation: ' + loadedCheckpoint.generation);
+            lastDownloadMessage = 'Checkpoint loaded! Level: ' + loadedCheckpoint.level + ' Gen: ' + loadedCheckpoint.generation;
+            lastDownloadMessageTime = millis();
             return;
         }
-        alert('Not a valid brain or checkpoint file');
+        lastDownloadMessage = 'Invalid file - not a brain, checkpoint, or snapshot';
+        lastDownloadMessageTime = millis();
     });
 
     // Hidden input to fallback to manual file selection
@@ -375,7 +379,8 @@ function setupFileDrop() {
             if (parsed && parsed.type === 'snapshot') {
                 const loadedSnapshot = population.applySnapshotData(parsed);
                 if (loadedSnapshot) {
-                    alert('Snapshot file loaded! Level: ' + loadedSnapshot.level + ' Generation: ' + loadedSnapshot.generation);
+                    lastDownloadMessage = 'Snapshot loaded! Level: ' + loadedSnapshot.level + ' Gen: ' + loadedSnapshot.generation;
+                    lastDownloadMessageTime = millis();
                     return;
                 }
             }
@@ -389,7 +394,8 @@ function setupFileDrop() {
                 population.players[i].brain.mutate();
             }
             population.gen = loadedBrain.generation || population.gen;
-            alert('Brain file loaded! Generation: ' + loadedBrain.generation);
+            lastDownloadMessage = 'Brain loaded! Gen: ' + loadedBrain.generation;
+            lastDownloadMessageTime = millis();
             return;
         }
         let loadedCheckpoint = await population.loadCheckpointFromFile(file);
@@ -401,10 +407,12 @@ function setupFileDrop() {
                     population.players[i].brain.currentInstructionNumber = population.checkpointState.brainActionNumber;
                 }
             }
-            alert('Checkpoint file loaded! Level: ' + loadedCheckpoint.level + ' Generation: ' + loadedCheckpoint.generation);
+            lastDownloadMessage = 'Checkpoint loaded! Level: ' + loadedCheckpoint.level + ' Gen: ' + loadedCheckpoint.generation;
+            lastDownloadMessageTime = millis();
             return;
         }
-        alert('Not a valid brain or checkpoint file');
+        lastDownloadMessage = 'Invalid file - not a brain, checkpoint, or snapshot';
+        lastDownloadMessageTime = millis();
     });
 
     // small UI: click the canvas to pick a file
